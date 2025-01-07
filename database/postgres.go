@@ -19,7 +19,7 @@ func NewPostgresDB(dsn string) (*Postgres, error) {
         return nil, fmt.Errorf("failed to connect to database: %w", err)
     }
 
-    err = db.AutoMigrate(&model.Bookmark{}, &model.Note{}, &model.Tag{}, &model.User{}, &model.UserToken{})
+    err = db.AutoMigrate(&model.Bookmark{}, &model.Note{}, &model.Tag{}, &model.User{})
     if err != nil {
         return nil, fmt.Errorf("failed to run migrations: %w", err)
     }

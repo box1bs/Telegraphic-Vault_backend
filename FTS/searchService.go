@@ -100,7 +100,7 @@ func (s *SearchService) BookmarkSearch(userID uuid.UUID, query string, limit int
 	}
 
 	searchRequest.Size = limit
-	searchRequest.Fields = []string{"title", "description", "url", "created_at"}
+	searchRequest.Fields = []string{"*"}
 
 	searchRequest.SortBy([]string{"-created_at"})
 
@@ -151,7 +151,7 @@ func (s *SearchService) NoteSearch(userID uuid.UUID, query string, limit int) ([
 	}
 
 	searchRequest.Size = limit
-	searchRequest.Fields = []string{"title", "content", "created_at"}
+	searchRequest.Fields = []string{"*"}
 
 	searchRequest.SortBy([]string{"-created_at"})
 
@@ -182,52 +182,6 @@ func (s *SearchService) NoteSearch(userID uuid.UUID, query string, limit int) ([
 	}
 
 	return notes, nil
-}
-
-type indexBookmark struct {
-	ID          string    `json:"id"`
-	URL         string    `json:"url"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	TagNames   	[]string  `json:"tag_names"`
-	TagIds	  	[]string  `json:"tag_ids"`
-	UserID      string    `json:"user_id"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
-func (s *SearchService) IndexBookmark(bookmark model.Bookmark) error {
-	return s.index.Index(bookmark.ID.String(), indexBookmark{
-		ID:          bookmark.ID.String(),
-		URL:         bookmark.URL,
-		Title:       bookmark.Title,
-		Description: bookmark.Description,
-		TagNames:    bookmark.Tags.Names(),
-		TagIds: 	 bookmark.Tags.IDs(),
-		UserID:      bookmark.UserID.String(),
-		CreatedAt:   bookmark.CreatedAt,
-	})
-}
-
-type indexNote struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	TagNames  []string  `json:"tag_names"`
-	TagIds	  []string  `json:"tag_ids"`
-	UserID    string    `json:"user_id"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-func (s *SearchService) IndexNote(note model.Note) error {
-	return s.index.Index(note.ID.String(), indexNote{
-		ID:        note.ID.String(),
-		Title:     note.Title,
-		Content:   note.Content,
-		TagNames:  note.Tags.Names(),
-		TagIds:    note.Tags.IDs(),
-		UserID:    note.UserID.String(),
-		CreatedAt: note.CreatedAt,
-	})
 }
 
 func makeFieldQuery(field, query string, boost float64) *query.MatchQuery {

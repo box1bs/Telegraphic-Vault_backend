@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"something/config"
+	"something/database"
 	"something/model"
 	"time"
 
@@ -21,24 +22,24 @@ type Claims struct {
 }
 
 type AuthService struct {
-	config config.AuthConfig
-	store  config.UserStore
+	config *config.AuthConfig
+	store  storage.JWTUserStorage
 }
 
-type TokenPair struct {
+type tokenPair struct {
     AccessToken  string    `json:"access_token"`
     RefreshToken string    `json:"refresh_token"`
     ExpiresAt    time.Time `json:"expires_at"`
 }
 
-func NewAuthService(config config.AuthConfig, store config.UserStore) *AuthService {
+func NewAuthService(config *config.AuthConfig, store storage.JWTUserStorage) *AuthService {
     return &AuthService{
         config: config,
         store:  store,
     }
 }
 
-func (s *AuthService) Login(username, password string) (*TokenPair, error) {
+func (s *AuthService) Login(username, password string) (*tokenPair, error) {
     user, err := s.store.FindByUsername(username)
     if err != nil {
         return nil, errors.New("invalid username or password")
@@ -48,10 +49,10 @@ func (s *AuthService) Login(username, password string) (*TokenPair, error) {
         return nil, errors.New("invalid username or password")
     }
 
-    return s.GenerateTokenPair(user)
+    return s.generateTokenPair(user)
 }
 
-func (s *AuthService) GenerateTokenPair(user *model.User) (*TokenPair, error) {
+func (s *AuthService) generateTokenPair(user *model.User) (*tokenPair, error) {
     accessToken, expiresAt, err := s.generateAccessToken(user)
     if err != nil {
         return nil, err
@@ -62,11 +63,7 @@ func (s *AuthService) GenerateTokenPair(user *model.User) (*TokenPair, error) {
         return nil, err
     }
 
-    if err := s.store.SaveRefreshToken(user.ID, refreshToken, time.Now().Add(s.config.RefreshTokenTTL)); err != nil {
-        return nil, err
-    }
-
-    return &TokenPair{
+    return &tokenPair{
         AccessToken:  accessToken,
         RefreshToken: refreshToken,
         ExpiresAt:    expiresAt,
@@ -151,7 +148,7 @@ func (s *AuthService) validateAccessToken(tokenString string) (*Claims, error) {
     return nil, errors.New("invalid token")
 }
 
-func (s *AuthService) RefreshTokens(refreshToken string) (*TokenPair, error) {
+func (s *AuthService) RefreshTokens(refreshToken string) (*tokenPair, error) {
     token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -177,11 +174,7 @@ func (s *AuthService) RefreshTokens(refreshToken string) (*TokenPair, error) {
         return nil, err
     }
 
-    if err := s.store.RevokeRefreshToken(user.ID, refreshToken); err != nil {
-        return nil, err
-    }
-
-    return s.GenerateTokenPair(user)
+    return s.generateTokenPair(user)
 }
 
 func extractToken(c *gin.Context) string {

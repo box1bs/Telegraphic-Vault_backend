@@ -3,29 +3,26 @@ package storage
 import (
 	"context"
 	"something/model"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 type Storage interface {
-	userStorage
-	tokenStorage
+	UserStorage
 	tagStorage
 	noteStorage
 	bookmarkStorage
 }
 
-type userStorage interface {
-	SaveUser(*model.User) error
+type JWTUserStorage interface {
 	FindByID(uuid.UUID) (*model.User, error)
 	FindByUsername(string) (*model.User, error)
 }
 
-type tokenStorage interface {
-	SaveRefreshToken(uuid.UUID, string, time.Time) error
-	ValidateRefreshToken(uuid.UUID, string) (bool, error)
-	RevokeRefreshToken(uuid.UUID, string) error
+type UserStorage interface {
+	SaveUser(*model.User) error
+	FindByID(uuid.UUID) (*model.User, error)
+	FindByUsername(string) (*model.User, error)
 }
 
 type bookmarkStorage interface {
@@ -45,7 +42,7 @@ type noteStorage interface {
 }
 
 type tagStorage interface {
-    CreateTag(context.Context, string) (*model.Tag, error)
+    createTag(context.Context, string) (*model.Tag, error)
 	AddTagToNote(context.Context, *model.Note, []string) error
 	AddTagToBookmark(context.Context, *model.Bookmark, []string) error
 	FindByTag(context.Context, string) ([]*model.Note, []*model.Bookmark, error)

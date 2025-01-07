@@ -58,11 +58,3 @@ type User struct {
     CreatedAt    time.Time `json:"created_at" gorm:"autoCreateTime"`
     LastLoginAt  time.Time `json:"last_login_at"`
 }
-
-type UserToken struct {
-	UserID     uuid.UUID 	`gorm:"not null"`
-	TokenHash  string 		`gorm:"not null"`
-	ExpiresAt  time.Time
-	IsRevoked  bool
-	Created_at time.Time	`gorm:"autoCreateTime"`
-}

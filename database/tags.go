@@ -14,8 +14,8 @@ type TagFilter struct {
 	UserID 	uuid.UUID `json:"user_id"`
 }
 
-func (p *Postgres) CreateTag(ctx context.Context, name string) (*model.Tag, error) {
-	tag := &model.Tag{ Name: normalizeName(name) }
+func (p *Postgres) createTag(ctx context.Context, name string) (*model.Tag, error) {
+	tag := &model.Tag{ Name: normalizeName(name), ID: uuid.New() }
 	if err := p.db.WithContext(ctx).FirstOrCreate(tag, model.Tag{Name: normalizeName(name)}).Error; err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (p *Postgres) CreateTag(ctx context.Context, name string) (*model.Tag, erro
 func (p *Postgres) AddTagToNote(ctx context.Context, note *model.Note, tagNames []string) error {
 	var tags []model.Tag
 	for _, name := range tagNames {
-		tag, err := p.CreateTag(ctx, name)
+		tag, err := p.createTag(ctx, name)
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ func (p *Postgres) AddTagToNote(ctx context.Context, note *model.Note, tagNames 
 func (p *Postgres) AddTagToBookmark(ctx context.Context, bookmark *model.Bookmark, tagNames []string) error {
 	var tags []model.Tag
 	for _, name := range tagNames {
-		tag, err := p.CreateTag(ctx, name)
+		tag, err := p.createTag(ctx, name)
 		if err != nil {
 			return err
 		}
