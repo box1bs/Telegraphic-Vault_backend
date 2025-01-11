@@ -39,6 +39,10 @@ func (s *SearchService) IndexBookmark(bookmark model.Bookmark) error {
 	})
 }
 
+func (s *SearchService) DeleteBookmark(id string) error {
+	return s.index.Delete(id)
+}
+
 func (s *SearchService) IndexNote(note model.Note) error {
 	return s.index.Index(note.ID.String(), IndexNote{
 		ID:        note.ID.String(),
@@ -49,4 +53,8 @@ func (s *SearchService) IndexNote(note model.Note) error {
 		UserID:    note.UserID.String(),
 		CreatedAt: note.CreatedAt,
 	})
+}
+
+func (s *SearchService) DeleteNote(id string) error {
+	return s.index.Delete(id)
 }

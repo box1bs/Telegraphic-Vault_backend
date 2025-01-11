@@ -16,21 +16,42 @@ func (p *Postgres) CreateNote(ctx context.Context, note model.Note) error {
 	return p.db.WithContext(ctx).Create(&note).Error
 }
 
-func (p *Postgres) GetNote(ctx context.Context, id uuid.UUID) (*model.Note, error) {
+func (p *Postgres) GetNote(ctx context.Context, userID uuid.UUID, title string) (*model.Note, error) {
 	var note *model.Note
-	err := p.db.WithContext(ctx).Where("id = ?", id).First(note).Error
+	err := p.db.WithContext(ctx).Where("user_id = ? AND title = ?", userID, title).First(note).Error
 	if err != nil {
 		return nil, err
 	}
 	return note, nil
 }
 
-func (p *Postgres) UpdateNote(ctx context.Context, note *model.Note) error {
-	return p.db.WithContext(ctx).Save(note).Error
+func (p *Postgres) UpdateNote(ctx context.Context, userID uuid.UUID, currentTitle, newTitle, content string, newTagNames []string) (*model.Note, error) {
+	note, err := p.GetNote(ctx, userID, currentTitle)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentTitle != newTitle {
+		var count int64
+		p.db.WithContext(ctx).Model(&model.Note{}).Where("user_id = ? AND title = ?", userID, newTitle).Count(&count)
+		if count > 0 {
+			return nil, model.ErrAlreadyExists
+		}
+	}
+
+	note.Title = newTitle
+	note.Content = content
+
+	if newTagNames != nil {
+		p.AddTagToNote(ctx, note, newTagNames)
+	}
+
+	err = p.db.WithContext(ctx).Save(note).Error
+	return note, err
 }
 
-func (p *Postgres) DeleteNote(ctx context.Context, id uuid.UUID) error {
-	return p.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Note{}).Error
+func (p *Postgres) DeleteNote(ctx context.Context, userID uuid.UUID, title string) error {
+	return p.db.WithContext(ctx).Where("user_id = ? AND title = ?", userID, title).Delete(&model.Note{}).Error
 }
 
 func (p *Postgres) ListNotes(ctx context.Context, filter NoteFilter) ([]*model.Note, error) {

@@ -39,17 +39,21 @@ func NewAuthService(config *config.AuthConfig, store storage.JWTUserStorage) *Au
     }
 }
 
-func (s *AuthService) Login(username, password string) (*tokenPair, error) {
-    user, err := s.store.FindByUsername(username)
-    if err != nil {
-        return nil, errors.New("invalid username or password")
+func (s *AuthService) Login(username, password string, u *model.User) (*tokenPair, error) {
+    if u == nil {
+        user, err := s.store.FindByUsername(username)
+        if err != nil {
+            return nil, errors.New("invalid username or password")
+        }
+
+        if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+            return nil, errors.New("invalid username or password")
+        }
+
+        return s.generateTokenPair(user)
     }
 
-    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-        return nil, errors.New("invalid username or password")
-    }
-
-    return s.generateTokenPair(user)
+    return s.generateTokenPair(u)
 }
 
 func (s *AuthService) generateTokenPair(user *model.User) (*tokenPair, error) {

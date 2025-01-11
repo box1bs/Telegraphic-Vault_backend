@@ -4,11 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"something/auth"
 	"something/database"
 	"something/model"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func (s *server) getAllBookmarkHandler(c *gin.Context) {
@@ -20,6 +24,10 @@ func (s *server) getAllBookmarkHandler(c *gin.Context) {
 
 	bookmarks, err := s.store.ListBookmarks(context.Background(), storage.BookmarkFilter{UserID: id})
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "bookmark not found"})
+			return
+		}
 		c.JSON(500, gin.H{"error": "internal error"})
 		return
 	}
@@ -54,9 +62,64 @@ func (s *server) postBookmarkHandler(c *gin.Context) {
 }
 
 func (s *server) putBookmarkHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	var payload struct {
+		URL 			string `json:"url"`
+		Title 			string `json:"title"`
+		Description 	string `json:"description"`
+		Tags 			[]string `json:"tags"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	bookmark, err := s.store.UpdateBookmark(context.Background(), id, payload.URL, payload.Title, payload.Description, payload.Tags)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "bookmark not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	s.index.IndexBookmark(*bookmark)
+
+	c.JSON(200, bookmark)
 }
 
 func (s *server) deleteBookmarkHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	uri := c.Query("uri")
+	if uri == "" {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := s.store.DeleteBookmark(context.Background(), id, uri); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "bookmark not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	s.index.DeleteBookmark(id.String())
+
+	c.JSON(204, nil)
 }
 
 
@@ -69,6 +132,10 @@ func (s *server) getAllNoteHandler(c *gin.Context) {
 
 	notes, err := s.store.ListNotes(context.Background(), storage.NoteFilter{UserID: id})
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
 		c.JSON(500, gin.H{"error": "internal error"})
 		return
 	}
@@ -77,27 +144,217 @@ func (s *server) getAllNoteHandler(c *gin.Context) {
 }
 
 func (s *server) postNoteHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	var note model.Note
+	if err := json.NewDecoder(c.Request.Body).Decode(&note); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	note.UserID = id
+	note.ID = uuid.New()
+	tags := make([]string, len(note.Tags))
+	copy(tags, note.Tags.Names())
+	note.Tags = []model.Tag{}
+	s.store.CreateNote(context.Background(), note)
+	s.store.AddTagToNote(context.Background(), &note, tags)
+
+	s.index.IndexNote(note)
+
+	c.JSON(201, note)
 }
 
 func (s *server) putNoteHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	var payload struct {
+		CurrentTitle 	string `json:"current_title"`
+		NewTitle 		string `json:"new_title"`
+		Content 		string `json:"content"`
+		Tags 			[]string `json:"tags"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	note, err := s.store.UpdateNote(context.Background(), id, payload.CurrentTitle, payload.NewTitle, payload.Content, payload.Tags)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	s.index.IndexNote(*note)
+
+	c.JSON(200, note)
 }
 
 func (s *server) deleteNoteHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	title := c.Query("title")
+	if title == "" {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if err := s.store.DeleteNote(context.Background(), id, title); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	s.index.DeleteNote(id.String())
+
+	c.JSON(204, nil)
 }
 
 
 func (s *server) searchHandler(c *gin.Context) {
-}
-
-func (s *server) authHandler(c *gin.Context) {
-	var LoginData loginData
-	if err := json.NewDecoder(c.Request.Body).Decode(&LoginData); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
 	}
 
-	tokenPair, err := s.auth.Login(LoginData.Username, LoginData.Password)
+	query := c.Query("q")
+	if query == "" {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	bookmarks, err := s.index.BookmarkSearch(id, query, 10)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	notes, err := s.index.NoteSearch(id, query, 10)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	c.JSON(200, gin.H{"bookmarks": bookmarks, "notes": notes})
+}
+
+func (s *server) registerHandler(c *gin.Context) {
+	var payload struct {
+		Username 			string `json:"username"`
+		EncryptedPassword 	string `json:"password"`
+		TempKey 			string `json:"key"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if _, exist := s.keyStore.Load(payload.TempKey); !exist {
+		c.JSON(401, gin.H{"error": "invalid key"})
+		return
+	}
+
+	password, err := auth.Decode(payload.EncryptedPassword, payload.TempKey)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "invalid key"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	user := &model.User{
+		ID: uuid.New(),
+		Username: payload.Username,
+		Password: string(hashedPassword),
+		Role: "user",
+		LastLoginAt: time.Now(),
+	}
+
+	if err := s.store.SaveUser(user); err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	c.JSON(201, gin.H{"message": "user created"})
+
+	tokenPair, err := s.auth.Login("", "", user)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	c.JSON(200, tokenPair)
+}
+
+func (s *server) keyHandler(c *gin.Context) {
+	key, err := auth.GenerateServerKey()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	s.keyStore.Store(key, time.Now())
+	go func(key string) {
+		time.Sleep(1 * time.Minute)
+		s.keyStore.Delete(key)
+	}(key)
+
+	c.JSON(200, gin.H{"key": key})
+}
+
+func (s *server) loginHandler(c *gin.Context) {
+	var payload struct {
+		Username 	string `json:"username"`
+		Password 	string `json:"password"`
+		TempKey 	string `json:"key"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if _, exist := s.keyStore.Load(payload.TempKey); !exist {
+		c.JSON(401, gin.H{"error": "invalid key"})
+		return
+	}
+
+	password, err := auth.Decode(payload.Password, payload.TempKey)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "invalid key"})
+		return
+	}
+
+	tokenPair, err := s.auth.Login(payload.Username, password, nil)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "invalid username or password"})
+		return
 	}
 
 	c.JSON(200, tokenPair)

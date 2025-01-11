@@ -15,7 +15,7 @@ type TagFilter struct {
 }
 
 func (p *Postgres) createTag(ctx context.Context, name string) (*model.Tag, error) {
-	tag := &model.Tag{ Name: normalizeName(name), ID: uuid.New() }
+	tag := &model.Tag{ Name: normalizeName(name) }
 	if err := p.db.WithContext(ctx).FirstOrCreate(tag, model.Tag{Name: normalizeName(name)}).Error; err != nil {
 		return nil, err
 	}

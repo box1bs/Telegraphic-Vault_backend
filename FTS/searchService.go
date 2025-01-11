@@ -27,11 +27,13 @@ func NewSearchService(indexPath string) (*SearchService, error) {
         mapping := createIndexMapping()
         index, err = bleve.New(indexPath, mapping)
         if err != nil {
+			log.Printf("error creating bleve index: %v", err)
             return nil, err
         }
     } else {
         index, err = bleve.Open(indexPath)
         if err != nil {
+			log.Printf("error openning bleve index: %v", err)
             return nil, err
         }
     }
@@ -45,14 +47,16 @@ func createIndexMapping() *mapping.IndexMappingImpl {
 		"type":      custom.Name,
 		"tokenizer": unicode.Name,
 		"token_filters": []string{
-			lowercase.Name,
-			ru.StopName,
-			ru.SnowballStemmerName,
+			lowercase.Name,       // Преобразование в нижний регистр
+			ru.StopName,          // Удаление стоп-слов
+			ru.SnowballStemmerName, // Морфологический анализ (стемминг)
 		},
 	})
 	if err != nil {
 		log.Fatalf("Failed to add custom analyzer: %v", err)
 	}
+
+	log.Println("custom analyzer succesfully created")
 
     textFieldMapping := bleve.NewTextFieldMapping()
     textFieldMapping.Analyzer = "ru_en"

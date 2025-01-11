@@ -27,17 +27,17 @@ type UserStorage interface {
 
 type bookmarkStorage interface {
     CreateBookmark(context.Context, model.Bookmark) error
-    GetBookmark(context.Context, uuid.UUID) (*model.Bookmark, error)
-    UpdateBookmark(context.Context, *model.Bookmark) error
-    DeleteBookmark(context.Context, uuid.UUID) error
+    GetBookmark(context.Context, uuid.UUID, string) (*model.Bookmark, error)
+    UpdateBookmark(context.Context, uuid.UUID, string, string, string, []string) (*model.Bookmark, error)
+    DeleteBookmark(context.Context, uuid.UUID, string) error
     ListBookmarks(context.Context, BookmarkFilter) ([]*model.Bookmark, error)
 }
 
 type noteStorage interface {
     CreateNote(context.Context, model.Note) error
-    GetNote(context.Context, uuid.UUID) (*model.Note, error)
-    UpdateNote(context.Context, *model.Note) error
-    DeleteNote(context.Context, uuid.UUID) error
+    GetNote(context.Context, uuid.UUID, string) (*model.Note, error)
+    UpdateNote(context.Context, uuid.UUID, string, string, string, []string) (*model.Note, error)
+    DeleteNote(context.Context, uuid.UUID, string) error
     ListNotes(context.Context, NoteFilter) ([]*model.Note, error)
 }
 

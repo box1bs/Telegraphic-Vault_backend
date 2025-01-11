@@ -6,19 +6,16 @@ import (
 	"something/auth"
 	"something/config"
 	"something/database"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
 
 type server struct {
-	store 	storage.Storage
-	index 	*fts.SearchService
-	auth 	*auth.AuthService
-}
-
-type loginData struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	store 		storage.Storage
+	index 		*fts.SearchService
+	auth 		*auth.AuthService
+	keyStore 	*sync.Map
 }
 
 func NewServer(store storage.Storage, conf *config.AuthConfig, indexPath string) *server {
@@ -31,6 +28,7 @@ func NewServer(store storage.Storage, conf *config.AuthConfig, indexPath string)
 		store: store,
 		index: index,
 		auth: auth.NewAuthService(conf, store),
+		keyStore: &sync.Map{},
 	}
 }
 
@@ -41,7 +39,9 @@ func (s *server) Run() error {
 }
 
 func (s *server) registerRoutes(r *gin.Engine) {
-	r.POST("/auth", s.authHandler)
+	r.GET("/auth", s.keyHandler) // register || login key for encrypt password
+	r.POST("/auth", s.registerHandler) // for registration
+	r.POST("/auth/login", s.loginHandler) // for login
 	app := r.Group("/app", s.auth.AuthMiddleware())
 	{
 		bookmarks := app.Group("/bookmarks")
