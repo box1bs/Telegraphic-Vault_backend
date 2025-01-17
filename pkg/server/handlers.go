@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"something/auth"
-	"something/database"
-	"something/model"
+	"something/pkg/auth"
+	"something/pkg/database"
+	"something/pkg/model"
 	"time"
 
 	"github.com/gin-gonic/gin"

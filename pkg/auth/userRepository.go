@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"something/database"
-	"something/model"
+	"something/pkg/database"
+	"something/pkg/model"
 
 	"github.com/google/uuid"
 )

@@ -3,9 +3,9 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"something/config"
-	"something/database"
-	"something/model"
+	"something/pkg/config"
+	"something/pkg/database"
+	"something/pkg/model"
 	"time"
 
 	"github.com/gin-gonic/gin"

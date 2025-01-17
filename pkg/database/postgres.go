@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"something/model"
+	"something/pkg/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

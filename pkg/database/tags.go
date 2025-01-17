@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
-	"something/model"
+	"something/pkg/model"
 	"strings"
 
 	"github.com/google/uuid"

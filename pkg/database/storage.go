@@ -2,7 +2,7 @@ package storage
 
 import (
 	"context"
-	"something/model"
+	"something/pkg/model"
 
 	"github.com/google/uuid"
 )

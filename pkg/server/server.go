@@ -1,9 +1,9 @@
 package server
 
 import (
-	"something/auth"
-	"something/config"
-	"something/database"
+	"something/pkg/auth"
+	"something/pkg/config"
+	"something/pkg/database"
 	"sync"
 
 	"github.com/gin-gonic/gin"

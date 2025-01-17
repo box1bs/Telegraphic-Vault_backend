@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"os"
-	"something/config"
-	"something/database"
-	"something/server"
+	"something/pkg/config"
+	"something/pkg/database"
+	"something/pkg/server"
 	"time"
 
 	"github.com/joho/godotenv"

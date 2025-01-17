@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"something/model"
+	"something/pkg/model"
 
 	"github.com/google/uuid"
 )
