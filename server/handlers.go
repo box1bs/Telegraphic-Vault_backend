@@ -42,19 +42,27 @@ func (s *server) postBookmarkHandler(c *gin.Context) {
 		return
 	}
 
-	var bookmark model.Bookmark
-	if err := json.NewDecoder(c.Request.Body).Decode(&bookmark); err != nil {
+	var payload struct {
+		Url 		string 			`json:"url"`
+		Title 		string 			`json:"title"`
+		Description string 			`json:"description"`
+		Tags 		[]string 		`json:"tags"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
-	bookmark.UserID = id
-	bookmark.ID = uuid.New()
-	tags := make([]string, len(bookmark.Tags))
-	copy(tags, bookmark.Tags.Names())
-	bookmark.Tags = []model.Tag{}
+	bookmark := model.Bookmark{
+		ID: uuid.New(),
+		URL: payload.Url,
+		Title: payload.Title,
+		Description: payload.Description,
+		UserID: id,
+	}
 	s.store.CreateBookmark(context.Background(), bookmark)
-	s.store.AddTagToBookmark(context.Background(), &bookmark, tags)
+	s.store.AddTagToBookmark(context.Background(), &bookmark, payload.Tags)
 
 	s.index.IndexBookmark(bookmark)
 
@@ -150,19 +158,25 @@ func (s *server) postNoteHandler(c *gin.Context) {
 		return
 	}
 
-	var note model.Note
-	if err := json.NewDecoder(c.Request.Body).Decode(&note); err != nil {
+	var payload struct {
+		Title 		string 			`json:"title"`
+		Content 	string 			`json:"content"`
+		Tags 		[]string 		`json:"tags"`
+	}
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
-	note.UserID = id
-	note.ID = uuid.New()
-	tags := make([]string, len(note.Tags))
-	copy(tags, note.Tags.Names())
-	note.Tags = []model.Tag{}
+	note := model.Note{
+		ID: uuid.New(),
+		Title: payload.Title,
+		Content: payload.Content,
+		UserID: id,
+	}
 	s.store.CreateNote(context.Background(), note)
-	s.store.AddTagToNote(context.Background(), &note, tags)
+	s.store.AddTagToNote(context.Background(), &note, payload.Tags)
 
 	s.index.IndexNote(note)
 
@@ -321,7 +335,7 @@ func (s *server) keyHandler(c *gin.Context) {
 
 	s.keyStore.Store(key, time.Now())
 	go func(key string) {
-		time.Sleep(1 * time.Minute)
+		time.Sleep(10 * time.Minute)
 		s.keyStore.Delete(key)
 	}(key)
 
@@ -329,6 +343,18 @@ func (s *server) keyHandler(c *gin.Context) {
 }
 
 func (s *server) loginHandler(c *gin.Context) {
+	if token := c.GetHeader("Authorization"); token != "" {
+		if token[:7] == "Bearer " {
+			tokenPair, err := s.auth.RefreshTokens(token[7:])
+			if err != nil {
+				c.JSON(401, "invalid token")
+				return
+			}
+			c.JSON(200, tokenPair)
+		}
+		return
+	}
+	
 	var payload struct {
 		Username 	string `json:"username"`
 		Password 	string `json:"password"`

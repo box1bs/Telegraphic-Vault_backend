@@ -20,8 +20,10 @@ func (p *Postgres) createTag(ctx context.Context, name string) (*model.Tag, erro
 		return nil, err
 	}
 
-	if err := p.db.WithContext(ctx).Model(tag).UpdateColumn("counter", gorm.Expr("counter + ?", 1)).Error; err != nil {
-		return nil, err
+	if tag.Count > 0 {
+		if err := p.db.WithContext(ctx).Model(tag).UpdateColumn("count", gorm.Expr("count + ?", 1)).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	return tag, nil

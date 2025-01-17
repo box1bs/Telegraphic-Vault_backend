@@ -84,7 +84,7 @@ func (s *AuthService) generateAccessToken(user *model.User) (string, time.Time, 
         RegisteredClaims: jwt.RegisteredClaims{
             ExpiresAt: jwt.NewNumericDate(expiresAt),
             IssuedAt:  jwt.NewNumericDate(time.Now()),
-            Subject:   fmt.Sprintf("%d", user.ID),
+            Subject:   user.ID.String(),
         },
     }
 
@@ -102,7 +102,7 @@ func (s *AuthService) generateRefreshToken(user *model.User) (string, error) {
     claims := jwt.RegisteredClaims{
         ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.RefreshTokenTTL)),
         IssuedAt:  jwt.NewNumericDate(time.Now()),
-        Subject:   fmt.Sprintf("%d", user.ID),
+        Subject:   user.ID.String(),
     }
 
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -125,7 +125,7 @@ func (s *AuthService) AuthMiddleware() gin.HandlerFunc {
             return
         }
 
-        c.Set("user_id", claims.UserID)
+        c.Set("user_id", claims.UserID.String())
         c.Set("username", claims.Username)
         c.Set("role", claims.Role)
 

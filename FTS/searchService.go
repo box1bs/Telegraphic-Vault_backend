@@ -138,7 +138,7 @@ func (s *SearchService) BookmarkSearch(userID uuid.UUID, query string, limit int
 	return bookmarks, nil
 }
 
-func (s *SearchService) NoteSearch(userID uuid.UUID, query string, limit int) ([]*model.Note, error) {
+func (s *SearchService) NoteSearch(userID uuid.UUID, query string, limit int) ([]uuid.UUID, error) {
 	userQuery := bleve.NewTermQuery(userID.String())
 	userQuery.SetField("user_id")
 
@@ -164,28 +164,30 @@ func (s *SearchService) NoteSearch(userID uuid.UUID, query string, limit int) ([
 		return nil, err
 	}
 
-	var notes []*model.Note
+	//var notes []*model.Note
+	var ids []uuid.UUID
 
 	for _, hit := range result.Hits {
-		var note model.Note
-		fields := hit.Fields
+		//var note model.Note
+		//fields := hit.Fields
+		i, _ := uuid.Parse(hit.ID)
+		ids = append(ids, i)
+		//note.ID, _ = uuid.Parse(hit.ID)
+		//note.Title = fields["title"].(string)
+		//note.Content = fields["content"].(string)
+		//tagIDs := fields["tag_ids"].([]interface{})
+		//tagNames := fields["tag_names"].([]interface{})
+		//for i := range tagIDs {
+		//	id, _ := uuid.Parse(tagIDs[i].(string))
+		//	note.Tags = append(note.Tags, model.Tag{ID: id, Name: tagNames[i].(string)})
+		//}
+		//note.UserID, _ = uuid.Parse(fields["user_id"].(string))
+		//note.CreatedAt, _ = time.Parse(time.RFC3339, fields["created_at"].(string))
 
-		note.ID, _ = uuid.Parse(hit.ID)
-		note.Title = fields["title"].(string)
-		note.Content = fields["content"].(string)
-		tagIDs := fields["tag_ids"].([]interface{})
-		tagNames := fields["tag_names"].([]interface{})
-		for i := range tagIDs {
-			id, _ := uuid.Parse(tagIDs[i].(string))
-			note.Tags = append(note.Tags, model.Tag{ID: id, Name: tagNames[i].(string)})
-		}
-		note.UserID, _ = uuid.Parse(fields["user_id"].(string))
-		note.CreatedAt, _ = time.Parse(time.RFC3339, fields["created_at"].(string))
-
-		notes = append(notes, &note)
+		//notes = append(notes, &note)
 	}
 
-	return notes, nil
+	return ids, nil
 }
 
 func makeFieldQuery(field, query string, boost float64) *query.MatchQuery {
