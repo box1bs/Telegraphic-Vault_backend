@@ -64,8 +64,6 @@ func (s *server) postBookmarkHandler(c *gin.Context) {
 	s.store.CreateBookmark(context.Background(), bookmark)
 	s.store.AddTagToBookmark(context.Background(), &bookmark, payload.Tags)
 
-	s.index.IndexBookmark(bookmark)
-
 	c.JSON(201, bookmark)
 }
 
@@ -98,8 +96,6 @@ func (s *server) putBookmarkHandler(c *gin.Context) {
 		return
 	}
 
-	s.index.IndexBookmark(*bookmark)
-
 	c.JSON(200, bookmark)
 }
 
@@ -125,11 +121,46 @@ func (s *server) deleteBookmarkHandler(c *gin.Context) {
 		return
 	}
 
-	s.index.DeleteBookmark(id.String())
-
 	c.JSON(204, nil)
 }
 
+func (s *server) searchBookmarkHandler(c *gin.Context) {
+	id, err := extractUserId(c)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	query := c.Query("q")
+	if query == "" {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	bookmarks, err := s.store.SearchBookmark(context.Background(), id, query)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	buf, err := s.store.GetBookmark(context.Background(), id, query)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	bookmarks = append(bookmarks, *buf)
+
+	c.JSON(200, bookmarks)
+}
 
 func (s *server) getAllNoteHandler(c *gin.Context) {
 	id, err := extractUserId(c)
@@ -178,8 +209,6 @@ func (s *server) postNoteHandler(c *gin.Context) {
 	s.store.CreateNote(context.Background(), note)
 	s.store.AddTagToNote(context.Background(), &note, payload.Tags)
 
-	s.index.IndexNote(note)
-
 	c.JSON(201, note)
 }
 
@@ -212,8 +241,6 @@ func (s *server) putNoteHandler(c *gin.Context) {
 		return
 	}
 
-	s.index.IndexNote(*note)
-
 	c.JSON(200, note)
 }
 
@@ -239,13 +266,10 @@ func (s *server) deleteNoteHandler(c *gin.Context) {
 		return
 	}
 
-	s.index.DeleteNote(id.String())
-
 	c.JSON(204, nil)
 }
 
-
-func (s *server) searchHandler(c *gin.Context) {
+func (s *server) searchNoteHandler(c *gin.Context) {
 	id, err := extractUserId(c)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "internal error"})
@@ -258,19 +282,17 @@ func (s *server) searchHandler(c *gin.Context) {
 		return
 	}
 
-	bookmarks, err := s.index.BookmarkSearch(id, query, 10)
+	note, err := s.store.GetNote(context.Background(), id, query)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": "note not found"})
+			return
+		}
 		c.JSON(500, gin.H{"error": "internal error"})
 		return
 	}
 
-	notes, err := s.index.NoteSearch(id, query, 10)
-	if err != nil {
-		c.JSON(500, gin.H{"error": "internal error"})
-		return
-	}
-
-	c.JSON(200, gin.H{"bookmarks": bookmarks, "notes": notes})
+	c.JSON(200, note)
 }
 
 func (s *server) registerHandler(c *gin.Context) {

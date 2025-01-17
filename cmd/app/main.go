@@ -31,6 +31,5 @@ func main() {
 			AccessTokenTTL: 60 * time.Minute,
 			RefreshTokenTTL: 24 * time.Hour,
 		},
-		"index",
 	).Run())
 }

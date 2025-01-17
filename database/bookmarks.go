@@ -26,6 +26,19 @@ func (p *Postgres) GetBookmark(ctx context.Context, userID uuid.UUID, uri string
 	return &bookmark, nil
 }
 
+func (p *Postgres) SearchBookmark(ctx context.Context, user_id uuid.UUID, title string) ([]model.Bookmark, error) {
+	var bookmarks []model.Bookmark
+	if err := p.db.WithContext(ctx).Where("user_id = ? AND title = ?", user_id, title).Find(&bookmarks).Error; err != nil {
+		return nil, err
+	}
+
+	if len(bookmarks) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	
+	return bookmarks, nil
+}
+
 func (p *Postgres) UpdateBookmark(ctx context.Context, userID uuid.UUID, uri, title, description string, newTagNames []string) (*model.Bookmark, error) {
 	bookmark, err := p.GetBookmark(ctx, userID, uri)
 	if err != nil {

@@ -31,12 +31,12 @@ func (b *Bookmark) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Note struct {
-	ID          uuid.UUID	`json:"id" gorm:"primaryKey;default:gen_random_uuid()"`
-	Title       string		`json:"title"`
-	Content     string		`json:"content"`
-	Tags        []Tag		`json:"tags" gorm:"many2many:note_tags;constraint:OnDelete:CASCADE;"`
-	UserID      uuid.UUID	`json:"user_id"`
-	CreatedAt   time.Time	`json:"created_at" gorm:"autoCreateTime"`
+	ID          	uuid.UUID	`json:"id" gorm:"primaryKey;default:gen_random_uuid()"`
+	Title       	string		`json:"title"`
+	Content     	string		`json:"content"`
+	Tags        	[]Tag		`json:"tags" gorm:"many2many:note_tags;constraint:OnDelete:CASCADE;"`
+	UserID      	uuid.UUID	`json:"user_id"`
+	CreatedAt   	time.Time	`json:"created_at" gorm:"autoCreateTime"`
 }
 
 func (n *Note) BeforeCreate(tx *gorm.DB) error {

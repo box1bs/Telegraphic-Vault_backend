@@ -28,6 +28,7 @@ type UserStorage interface {
 type bookmarkStorage interface {
     CreateBookmark(context.Context, model.Bookmark) error
     GetBookmark(context.Context, uuid.UUID, string) (*model.Bookmark, error)
+	SearchBookmark(context.Context, uuid.UUID, string) ([]model.Bookmark, error)
     UpdateBookmark(context.Context, uuid.UUID, string, string, string, []string) (*model.Bookmark, error)
     DeleteBookmark(context.Context, uuid.UUID, string) error
     ListBookmarks(context.Context, BookmarkFilter) ([]*model.Bookmark, error)
