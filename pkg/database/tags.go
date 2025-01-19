@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"slices"
 	"something/pkg/model"
 	"strings"
 
@@ -42,6 +43,53 @@ func (p *Postgres) AddTagToNote(ctx context.Context, note *model.Note, tagNames 
 	return p.db.WithContext(ctx).Model(note).Association("Tags").Append(tags)
 }
 
+func (p *Postgres) updateNoteTags(ctx context.Context, note *model.Note, newTagNames []string) error {
+	newTagNames = removeDuplicates(newTagNames)
+
+	err := p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var removingTags []model.Tag
+		for _, tag := range note.Tags {
+			if !slices.Contains(newTagNames, tag.Name) {
+				removingTags = append(removingTags, tag)
+			} else {
+				newTagNames = remove(newTagNames, tag.Name)
+			}
+		}
+
+		if len(removingTags) > 0 {
+			if err := tx.Model(note).Association("Tags").Delete(removingTags); err != nil {
+				return err
+			}
+
+			if err := p.db.WithContext(ctx).
+				Model(&model.Tag{}).
+				Where("id IN ?", ExtractTagIDs(removingTags)).
+				UpdateColumn("count", gorm.Expr("GREATEST(count - ?, 0)", 1)).
+				Error; err != nil {
+				return err
+			}
+		}
+
+		if len(newTagNames) > 0 {
+			if err := p.AddTagToNote(ctx, note, newTagNames); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err := p.db.WithContext(ctx).Preload("Tags").First(note, note.ID).Error; err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (p *Postgres) AddTagToBookmark(ctx context.Context, bookmark *model.Bookmark, tagNames []string) error {
 	var tags []model.Tag
 	for _, name := range tagNames {
@@ -53,6 +101,76 @@ func (p *Postgres) AddTagToBookmark(ctx context.Context, bookmark *model.Bookmar
 	}
 
 	return p.db.WithContext(ctx).Model(bookmark).Association("Tags").Append(tags)
+}
+
+func (p *Postgres) updateBookmarkTags(ctx context.Context, bookmark *model.Bookmark, newTagNames []string) error {
+	newTagNames = removeDuplicates(newTagNames)
+
+	err := p.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var removingTags []model.Tag
+		for _, tag := range bookmark.Tags {
+			if !slices.Contains(newTagNames, tag.Name) {
+				removingTags = append(removingTags, tag)
+			} else {
+				newTagNames = remove(newTagNames, tag.Name)
+			}
+		}
+
+		if len(removingTags) > 0 {
+			if err := tx.Model(bookmark).Association("Tags").Delete(removingTags); err != nil {
+				return err
+			}
+
+			if err := p.db.WithContext(ctx).
+				Model(&model.Tag{}).
+				Where("id IN ?", ExtractTagIDs(removingTags)).
+				UpdateColumn("count", gorm.Expr("GREATEST(count - ?, 0)", 1)).
+				Error; err != nil {
+				return err
+			}
+		}
+
+		if len(newTagNames) > 0 {
+			if err := p.AddTagToBookmark(ctx, bookmark, newTagNames); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err := p.db.WithContext(ctx).Preload("Tags").First(bookmark, bookmark.ID).Error; err != nil {
+		return err
+	}
+
+	return err
+}
+
+func remove(list []string, item string) []string {
+    for i, v := range list {
+        if v == item {
+            copy(list[i:], list[i+1:])
+            list[len(list)-1] = ""
+            list = list[:len(list)-1]
+        }
+    }
+    return list
+}
+
+func removeDuplicates(names []string) []string {
+    seen := make(map[string]struct{})
+    result := []string{}
+    for _, name := range names {
+        if _, exists := seen[name]; !exists {
+            seen[name] = struct{}{}
+            result = append(result, name)
+        }
+    }
+    return result
 }
 
 func (p *Postgres) FindByTag(ctx context.Context, tagName string) ([]*model.Note, []*model.Bookmark, error) {
@@ -130,4 +248,12 @@ func (p* Postgres) GetPopularTags(ctx context.Context, filter TagFilter, limit i
 
 func normalizeName(name string) string {
 	return strings.ToLower(strings.TrimSpace(strings.Replace(name, " ", "-", -1)))
+}
+
+func ExtractTagIDs(tags []model.Tag) []uuid.UUID {
+    ids := make([]uuid.UUID, len(tags))
+    for i, tag := range tags {
+        ids[i] = tag.ID
+    }
+    return ids
 }

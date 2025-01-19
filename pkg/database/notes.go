@@ -43,7 +43,9 @@ func (p *Postgres) UpdateNote(ctx context.Context, userID uuid.UUID, currentTitl
 	note.Content = content
 
 	if newTagNames != nil {
-		p.AddTagToNote(ctx, note, newTagNames)
+		if err := p.updateNoteTags(ctx, note, newTagNames); err != nil {
+			return nil, err
+		}
 	}
 
 	err = p.db.WithContext(ctx).Save(note).Error
@@ -51,9 +53,24 @@ func (p *Postgres) UpdateNote(ctx context.Context, userID uuid.UUID, currentTitl
 }
 
 func (p *Postgres) DeleteNote(ctx context.Context, userID uuid.UUID, title string) error {
-	result := p.db.WithContext(ctx).Where("user_id = ? AND title = ?", userID, title).Delete(&model.Note{})
-	if result.Error != nil {
-		return result.Error
+	query := p.db.WithContext(ctx).Where("user_id = ? AND title = ?", userID, title)
+	var note model.Note
+	if err := query.First(&note).Error; err != nil {
+		return err
+	}
+
+	if err := p.db.WithContext(ctx).
+		Model(&model.Tag{}).
+		Where("id IN ?", ExtractTagIDs(note.Tags)).
+		UpdateColumn("count", gorm.Expr("GREATEST(count - ?, 0)", 1)).
+		Error; err != nil {
+		return err
+	}
+
+	result := query.Delete(&note)
+
+	if err := result.Error; err != nil {
+		return err
 	}
 
 	if result.RowsAffected == 0 {

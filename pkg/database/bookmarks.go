@@ -49,7 +49,9 @@ func (p *Postgres) UpdateBookmark(ctx context.Context, userID uuid.UUID, uri, ti
 	bookmark.Description = description
 	
 	if newTagNames != nil {
-		p.AddTagToBookmark(ctx, bookmark, newTagNames)
+		if err := p.updateBookmarkTags(ctx, bookmark, newTagNames); err != nil {
+			return nil, err
+		}
 	}
 
 	err = p.db.WithContext(ctx).Save(bookmark).Error
@@ -57,7 +59,21 @@ func (p *Postgres) UpdateBookmark(ctx context.Context, userID uuid.UUID, uri, ti
 }
 
 func (p *Postgres) DeleteBookmark(ctx context.Context, userID uuid.UUID, uri string) error {
-	result := p.db.WithContext(ctx).Where("user_id = ? AND url = ?", userID, uri).Delete(&model.Bookmark{})
+	query := p.db.WithContext(ctx).Where("user_id = ? AND url = ?", userID, uri)
+	var bookmark model.Bookmark
+	if err := query.First(&bookmark).Error; err != nil {
+		return err
+	}
+
+	if err := p.db.WithContext(ctx).
+		Model(&model.Tag{}).
+		Where("id IN ?", ExtractTagIDs(bookmark.Tags)).
+		UpdateColumn("count", gorm.Expr("GREATEST(count - ?, 0)", 1)).
+		Error; err != nil {
+		return err
+	}
+
+	result := query.Delete(&bookmark)
 	if result.Error != nil {
 		return result.Error
 	}
