@@ -7,21 +7,24 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 type server struct {
 	store 		storage.Storage
 	auth 		*auth.AuthService
 	keyStore 	*sync.Map
+	rateLimiter map[string]*rate.Limiter
+	mu 			*sync.Mutex
 }
 
 func NewServer(store storage.Storage, conf *config.AuthConfig) *server {
-	
-
 	return &server{
 		store: store,
 		auth: auth.NewAuthService(conf, store),
 		keyStore: &sync.Map{},
+		rateLimiter: make(map[string]*rate.Limiter),
+		mu: new(sync.Mutex),
 	}
 }
 
