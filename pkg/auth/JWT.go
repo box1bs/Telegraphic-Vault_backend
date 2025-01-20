@@ -29,7 +29,7 @@ type AuthService struct {
 type tokenPair struct {
     AccessToken  string    `json:"access_token"`
     RefreshToken string    `json:"refresh_token"`
-    ExpiresAt    time.Time `json:"expires_at"`
+    ExpiresAt    string    `json:"expires_at"`
 }
 
 func NewAuthService(config *config.AuthConfig, store storage.JWTUserStorage) *AuthService {
@@ -70,7 +70,7 @@ func (s *AuthService) generateTokenPair(user *model.User) (*tokenPair, error) {
     return &tokenPair{
         AccessToken:  accessToken,
         RefreshToken: refreshToken,
-        ExpiresAt:    expiresAt,
+        ExpiresAt:    expiresAt.String(),
     }, nil
 }
 

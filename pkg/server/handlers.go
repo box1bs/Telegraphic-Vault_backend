@@ -358,7 +358,7 @@ func (s *server) keyHandler(c *gin.Context) {
 
 	s.keyStore.Store(key, time.Now())
 	go func(key string) {
-		time.Sleep(10 * time.Minute)
+		time.Sleep(1 * time.Minute)
 		s.keyStore.Delete(key)
 	}(key)
 
