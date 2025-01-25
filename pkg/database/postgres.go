@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/box1bs/ClockworkChronicle/pkg/model"
+	"github.com/box1bs/TelegraphicVault/pkg/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

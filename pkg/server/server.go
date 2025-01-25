@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/box1bs/ClockworkChronicle/pkg/auth"
-	"github.com/box1bs/ClockworkChronicle/pkg/config"
-	"github.com/box1bs/ClockworkChronicle/pkg/database"
+	"github.com/box1bs/TelegraphicVault/pkg/auth"
+	"github.com/box1bs/TelegraphicVault/pkg/config"
+	"github.com/box1bs/TelegraphicVault/pkg/database"
 	"sync"
 
 	"github.com/gin-gonic/gin"

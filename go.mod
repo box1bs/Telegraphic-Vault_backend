@@ -1,4 +1,4 @@
-module github.com/box1bs/ClockworkChronicle
+module github.com/box1bs/TelegraphicVault
 
 go 1.23.3
 

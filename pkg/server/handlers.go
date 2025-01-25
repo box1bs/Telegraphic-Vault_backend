@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/box1bs/ClockworkChronicle/pkg/auth"
-	"github.com/box1bs/ClockworkChronicle/pkg/database"
-	"github.com/box1bs/ClockworkChronicle/pkg/model"
+	"github.com/box1bs/TelegraphicVault/pkg/auth"
+	"github.com/box1bs/TelegraphicVault/pkg/database"
+	"github.com/box1bs/TelegraphicVault/pkg/model"
 	"time"
 
 	"github.com/gin-gonic/gin"

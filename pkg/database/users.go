@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/box1bs/ClockworkChronicle/pkg/model"
+	"github.com/box1bs/TelegraphicVault/pkg/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
