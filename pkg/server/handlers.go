@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"something/pkg/auth"
-	"something/pkg/database"
-	"something/pkg/model"
+	"github.com/box1bs/ClockworkChronicle/pkg/auth"
+	"github.com/box1bs/ClockworkChronicle/pkg/database"
+	"github.com/box1bs/ClockworkChronicle/pkg/model"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -305,6 +305,12 @@ func (s *server) registerHandler(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	existingUser, err := s.store.FindByUsername(payload.Username)
+	if err == nil && existingUser != nil {
+		c.JSON(409, gin.H{"error": "username already exists"})
 		return
 	}
 

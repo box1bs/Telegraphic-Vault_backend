@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
-	"something/pkg/model"
+	"github.com/box1bs/ClockworkChronicle/pkg/model"
 	"strings"
 
 	"github.com/google/uuid"

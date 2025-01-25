@@ -1,9 +1,9 @@
 package server
 
 import (
-	"something/pkg/auth"
-	"something/pkg/config"
-	"something/pkg/database"
+	"github.com/box1bs/ClockworkChronicle/pkg/auth"
+	"github.com/box1bs/ClockworkChronicle/pkg/config"
+	"github.com/box1bs/ClockworkChronicle/pkg/database"
 	"sync"
 
 	"github.com/gin-gonic/gin"

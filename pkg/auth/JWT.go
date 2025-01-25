@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"something/pkg/config"
-	"something/pkg/database"
-	"something/pkg/model"
+	"github.com/box1bs/ClockworkChronicle/pkg/config"
+	"github.com/box1bs/ClockworkChronicle/pkg/database"
+	"github.com/box1bs/ClockworkChronicle/pkg/model"
 	"time"
 
 	"github.com/gin-gonic/gin"

@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"os"
-	"something/pkg/config"
-	"something/pkg/database"
-	"something/pkg/server"
+	"github.com/box1bs/ClockworkChronicle/pkg/config"
+	"github.com/box1bs/ClockworkChronicle/pkg/database"
+	"github.com/box1bs/ClockworkChronicle/pkg/server"
 	"time"
 
 	"github.com/joho/godotenv"

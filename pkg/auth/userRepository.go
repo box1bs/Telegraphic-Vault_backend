@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"something/pkg/database"
-	"something/pkg/model"
+	"github.com/box1bs/ClockworkChronicle/pkg/database"
+	"github.com/box1bs/ClockworkChronicle/pkg/model"
 
 	"github.com/google/uuid"
 )
