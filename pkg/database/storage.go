@@ -17,12 +17,14 @@ type Storage interface {
 type JWTUserStorage interface {
 	FindByID(uuid.UUID) (*model.User, error)
 	FindByUsername(string) (*model.User, error)
+	LastLoginUpdate(*model.User) error
 }
 
 type UserStorage interface {
 	SaveUser(*model.User) error
 	FindByID(uuid.UUID) (*model.User, error)
 	FindByUsername(string) (*model.User, error)
+	LastLoginUpdate(*model.User) error
 }
 
 type bookmarkStorage interface {

@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"log"
 	"something/pkg/config"
 	"something/pkg/database"
 	"something/pkg/model"
@@ -13,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrAuthFailed = errors.New("invalid username or password")
 
 type Claims struct {
     UserID    uuid.UUID `json:"user_id"`
@@ -39,20 +42,30 @@ func NewAuthService(config *config.AuthConfig, store storage.JWTUserStorage) *Au
     }
 }
 
-func (s *AuthService) Login(username, password string, u *model.User) (*tokenPair, error) {
-    if u == nil {
-        user, err := s.store.FindByUsername(username)
-        if err != nil {
-            return nil, errors.New("invalid username or password")
-        }
-
-        if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-            return nil, errors.New("invalid username or password")
-        }
-
-        return s.generateTokenPair(user)
+func (s *AuthService) Login(username, password string) (*tokenPair, error) {
+    user, err := s.store.FindByUsername(username)
+    if err != nil {
+        return nil, ErrAuthFailed
     }
 
+    if err := bcrypt.CompareHashAndPassword(
+        []byte(user.Password),
+        []byte(password),
+    ); err != nil {
+        return nil, ErrAuthFailed
+    }
+
+    if err := s.store.LastLoginUpdate(user); err != nil {
+        log.Printf("last_login update failed for %s: %v\n", user.ID, err)
+    }
+
+    return s.generateTokenPair(user)
+}
+
+func (s *AuthService) Register(u *model.User) (*tokenPair, error) {
+    if err := s.store.LastLoginUpdate(u); err != nil {
+        log.Printf("last_login update failed for %s: %v\n", u.ID, err)
+    }
     return s.generateTokenPair(u)
 }
 

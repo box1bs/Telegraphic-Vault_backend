@@ -4,6 +4,7 @@ import (
 	"something/pkg/model"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (p *Postgres) SaveUser(u *model.User) error {
@@ -26,4 +27,11 @@ func (p *Postgres) FindByUsername(username string) (*model.User, error) {
 	}
 
 	return u, nil
+}
+
+func (p *Postgres) LastLoginUpdate(u *model.User) error {
+	return p.db.Model(u).
+	Where("id = ?", u.ID).
+	UpdateColumn("last_login_at", gorm.Expr("CURRENT_TIMESTAMP")).
+	Error
 }

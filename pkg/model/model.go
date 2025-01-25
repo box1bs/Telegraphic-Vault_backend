@@ -18,7 +18,7 @@ type Bookmark struct {
 	Title      	string		`json:"title"`
 	Description string		`json:"description"`
 	Tags       	[]Tag		`json:"tags" gorm:"many2many:bookmark_tags;constraint:OnDelete:CASCADE;"`
-	UserID     	uuid.UUID	`json:"user_id" gorm:"not null"`
+	UserID     	uuid.UUID	`json:"-" gorm:"not null"`
 	CreatedAt  	time.Time	`json:"created_at" gorm:"autoCreateTime"`
 }
 
@@ -35,7 +35,7 @@ type Note struct {
 	Title       	string		`json:"title"`
 	Content     	string		`json:"content"`
 	Tags        	[]Tag		`json:"tags" gorm:"many2many:note_tags;constraint:OnDelete:CASCADE;"`
-	UserID      	uuid.UUID	`json:"user_id"`
+	UserID      	uuid.UUID	`json:"-"`
 	CreatedAt   	time.Time	`json:"created_at" gorm:"autoCreateTime"`
 }
 
@@ -48,7 +48,7 @@ func (n *Note) BeforeCreate(tx *gorm.DB) error {
 }
 
 type User struct {
-	ID           uuid.UUID `json:"id" gorm:"primaryKey;default:gen_random_uuid()"`
+	ID           uuid.UUID `json:"-" gorm:"primaryKey;default:gen_random_uuid()"`
     Username     string    `json:"username" gorm:"unique;not null"`
     Password     string    `json:"-" gorm:"not null"`
     Role         string    `json:"role"`

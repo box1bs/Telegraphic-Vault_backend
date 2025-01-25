@@ -330,7 +330,6 @@ func (s *server) registerHandler(c *gin.Context) {
 		Username: payload.Username,
 		Password: string(hashedPassword),
 		Role: "user",
-		LastLoginAt: time.Now(),
 	}
 
 	if err := s.store.SaveUser(user); err != nil {
@@ -338,15 +337,13 @@ func (s *server) registerHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(201, gin.H{"message": "user created"})
-
-	tokenPair, err := s.auth.Login("", "", user)
+	tokenPair, err := s.auth.Register(user)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "internal error"})
 		return
 	}
 
-	c.JSON(200, tokenPair)
+	c.JSON(201, tokenPair)
 }
 
 func (s *server) keyHandler(c *gin.Context) {
@@ -410,7 +407,7 @@ func (s *server) loginHandler(c *gin.Context) {
 		return
 	}
 
-	tokenPair, err := s.auth.Login(payload.Username, password, nil)
+	tokenPair, err := s.auth.Login(payload.Username, password)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "invalid username or password"})
 		return
