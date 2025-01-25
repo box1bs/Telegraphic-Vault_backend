@@ -35,7 +35,7 @@ func (s *server) Run() error {
 }
 
 func (s *server) registerRoutes(r *gin.Engine) {
-	r.GET("/auth", s.keyHandler) // register || login key for encrypt password
+	r.GET("/auth", s.keyHandler) // encryption key for encrypt password
 	r.POST("/auth", s.registerHandler) // for registration
 	r.POST("/auth/login", s.loginHandler) // for login
 	app := r.Group("/app", s.auth.AuthMiddleware())
