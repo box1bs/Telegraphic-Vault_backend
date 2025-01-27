@@ -1,10 +1,12 @@
 package server
 
 import (
+	"sync"
+
 	"github.com/box1bs/TelegraphicVault/pkg/auth"
 	"github.com/box1bs/TelegraphicVault/pkg/config"
 	"github.com/box1bs/TelegraphicVault/pkg/database"
-	"sync"
+	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -30,6 +32,13 @@ func NewServer(store storage.Storage, conf *config.AuthConfig) *server {
 
 func (s *server) Run() error {
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://localhost:5173"},
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+        AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+        ExposeHeaders:    []string{"Content-Length"},
+        AllowCredentials: true,
+    }))
 	s.registerRoutes(r)
 	return r.Run()
 }
