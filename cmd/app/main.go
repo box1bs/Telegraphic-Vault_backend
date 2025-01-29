@@ -29,7 +29,7 @@ func main() {
 			AccessTokenSecret: os.Getenv("ACCESS_TOKEN_SECRET"),
 			RefreshTokenSecret: os.Getenv("REFRESH_TOKEN_SECRET"),
 			AccessTokenTTL: 15 * time.Minute,
-			RefreshTokenTTL: 24 * time.Hour,
+			RefreshTokenTTL: 30 * 24 * time.Hour,
 		},
 	).Run())
 }

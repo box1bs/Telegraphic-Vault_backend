@@ -47,6 +47,7 @@ func (s *server) registerRoutes(r *gin.Engine) {
 	r.GET("/auth", s.keyHandler) // encryption key for encrypt password
 	r.POST("/auth", s.registerHandler) // for registration
 	r.POST("/auth/login", s.loginHandler) // for login
+	r.POST("/auth/refresh", s.refreshHandler)
 	app := r.Group("/app", s.auth.AuthMiddleware())
 	{
 		bookmarks := app.Group("/bookmarks")

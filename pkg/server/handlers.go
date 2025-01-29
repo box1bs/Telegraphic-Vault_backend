@@ -296,6 +296,24 @@ func (s *server) searchNoteHandler(c *gin.Context) {
 	c.JSON(200, note)
 }
 
+func (s *server) refreshHandler(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token != "" {
+		if token[:7] == "Bearer " {
+			tokenPair, err := s.auth.RefreshTokens(token[7:])
+			if err != nil {
+				c.JSON(401, gin.H{"error": "invalid token"})
+				return
+			}
+			c.JSON(200, tokenPair)
+			return
+		}
+		c.JSON(401, gin.H{"error": "invalid token format"})
+		return
+	}
+	c.JSON(401, gin.H{"error": "empty token"})
+}
+
 func (s *server) registerHandler(c *gin.Context) {
 	var payload struct {
 		Username 			string `json:"username"`
@@ -377,20 +395,6 @@ func (s *server) loginHandler(c *gin.Context) {
 		return
 	}
 
-	if token := c.GetHeader("Authorization"); token != "" {
-		if token[:7] == "Bearer " {
-			tokenPair, err := s.auth.RefreshTokens(token[7:])
-			if err != nil {
-				c.JSON(401, gin.H{"error": "invalid token"})
-				return
-			}
-			c.JSON(200, tokenPair)
-			return
-		}
-		c.JSON(401, gin.H{"error": "invalid token format"})
-		return
-	}
-	
 	var payload struct {
 		Username 	string `json:"username"`
 		Password 	string `json:"password"`
