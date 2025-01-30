@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"golang.org/x/time/rate"
 )
 
 func (s *server) getAllBookmarkHandler(c *gin.Context) {
@@ -387,14 +386,6 @@ func (s *server) keyHandler(c *gin.Context) {
 }
 
 func (s *server) loginHandler(c *gin.Context) {
-	ip := c.ClientIP()
-	limiter := s.getLimiter(ip)
-
-	if !limiter.Allow() {
-		c.JSON(429, gin.H{"error": "Too many requests"})
-		return
-	}
-
 	var payload struct {
 		Username 	string `json:"username"`
 		Password 	string `json:"password"`
@@ -424,19 +415,6 @@ func (s *server) loginHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, tokenPair)
-}
-
-func (s *server) getLimiter(ip string) *rate.Limiter {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if limiter, exists := s.rateLimiter[ip]; exists {
-		return limiter
-	}
-
-	limiter := rate.NewLimiter(1, 5) // 1 token per second, 5 max
-	s.rateLimiter[ip] = limiter
-	return limiter
 }
 
 func extractUserId(c *gin.Context) (uuid.UUID, error) {
