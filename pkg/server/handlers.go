@@ -147,18 +147,6 @@ func (s *server) searchBookmarkHandler(c *gin.Context) {
 		return
 	}
 
-	buf, err := s.store.GetBookmark(context.Background(), id, query)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(404, gin.H{"error": "note not found"})
-			return
-		}
-		c.JSON(500, gin.H{"error": "internal error"})
-		return
-	}
-
-	bookmarks = append(bookmarks, *buf)
-
 	c.JSON(200, bookmarks)
 }
 

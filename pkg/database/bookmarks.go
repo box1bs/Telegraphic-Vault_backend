@@ -17,7 +17,7 @@ func (p *Postgres) CreateBookmark(ctx context.Context, bookmark model.Bookmark) 
 	return p.db.WithContext(ctx).Create(&bookmark).Error
 }
 
-func (p *Postgres) GetBookmark(ctx context.Context, userID uuid.UUID, uri string) (*model.Bookmark, error) {
+func (p *Postgres) getBookmark(ctx context.Context, userID uuid.UUID, uri string) (*model.Bookmark, error) {
 	var bookmark model.Bookmark
 	err := p.db.WithContext(ctx).Where("user_id = ? AND url = ?", userID, uri).First(&bookmark).Error
 	if err != nil {
@@ -26,9 +26,9 @@ func (p *Postgres) GetBookmark(ctx context.Context, userID uuid.UUID, uri string
 	return &bookmark, nil
 }
 
-func (p *Postgres) SearchBookmark(ctx context.Context, user_id uuid.UUID, title string) ([]model.Bookmark, error) {
+func (p *Postgres) SearchBookmark(ctx context.Context, user_id uuid.UUID, query string) ([]model.Bookmark, error) {
 	var bookmarks []model.Bookmark
-	if err := p.db.WithContext(ctx).Where("user_id = ? AND title = ?", user_id, title).Find(&bookmarks).Error; err != nil {
+	if err := p.db.WithContext(ctx).Where("user_id = ? AND title = ? OR user_id = ? AND url = ?", user_id, query, user_id, query).Find(&bookmarks).Error; err != nil {
 		return nil, err
 	}
 
@@ -40,7 +40,7 @@ func (p *Postgres) SearchBookmark(ctx context.Context, user_id uuid.UUID, title 
 }
 
 func (p *Postgres) UpdateBookmark(ctx context.Context, userID uuid.UUID, uri, title, description string, newTagNames []string) (*model.Bookmark, error) {
-	bookmark, err := p.GetBookmark(ctx, userID, uri)
+	bookmark, err := p.getBookmark(ctx, userID, uri)
 	if err != nil {
 		return nil, err
 	}
